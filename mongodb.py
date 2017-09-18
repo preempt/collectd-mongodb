@@ -40,7 +40,7 @@ class MongoDB(object):
 
     def do_server_status(self):
         if self.mongo_user and self.mongo_password:
-            con = MongoClient(host=self.mongo_host, port=self.mongo_port, tz_aware=True, ssl=True, ssl_certfile=self.ssl_certfile, ssl_cert_reqs=ssl.CERT_REQUIRED, ssl_ca_certs=self.ssl_ca_certs, replicaSet=self.replicaSet)
+            con = MongoClient(host=self.mongo_host, port=self.mongo_port, tz_aware=True, ssl=True, ssl_certfile=self.ssl_certfile, ssl_cert_reqs=ssl.CERT_REQUIRED, ssl_ca_certs=self.ssl_ca_certs)
             db = con[self.mongo_db[0]]
             db.authenticate(self.mongo_user, self.mongo_password)
         else:
@@ -134,13 +134,13 @@ class MongoDB(object):
             elif node.key == 'Password':
                 self.mongo_password = node.values[0]
             elif node.key == 'Database':
-                self.mongo_db = node.values
+                self.mongo_db = node.values[0]
             elif node.key == 'Ssl_certfile':
-                self.ssl_certfile = node.values
+                self.ssl_certfile = node.values[0]
             elif node.key == 'Ssl_ca_certs':
-                self.ssl_ca_certs = node.values
+                self.ssl_ca_certs = node.values[0]
             elif node.key == 'ReplicaSet':
-                self.replicaSet = node.values
+                self.replicaSet = node.values[0]
             else:
                 collectd.warning("mongodb plugin: Unkown configuration key %s" % node.key)
 
