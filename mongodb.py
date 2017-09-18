@@ -1,7 +1,7 @@
 #
 # Plugin to collectd statistics from MongoDB
 #
-
+import ssl
 import collectd
 from pymongo import MongoClient
 from pymongo.read_preferences import ReadPreference
@@ -12,12 +12,14 @@ class MongoDB(object):
 
     def __init__(self):
         self.plugin_name = "mongo"
-        self.mongo_host = "127.0.0.1"
+        self.mongo_host = "localhost"
         self.mongo_port = 27017
         self.mongo_db = ["admin", ]
         self.mongo_user = None
         self.mongo_password = None
-
+        self.ssl_certfile = None
+        self.ssl_ca_certs = None
+        self.replicaSet = None
         self.lockTotalTime = None
         self.lockTime = None
         self.accesses = None
@@ -37,10 +39,14 @@ class MongoDB(object):
         v.dispatch()
 
     def do_server_status(self):
-        con = MongoClient(host=self.mongo_host, port=self.mongo_port, read_preference=ReadPreference.SECONDARY)
-        db = con[self.mongo_db[0]]
         if self.mongo_user and self.mongo_password:
+            con = MongoClient(host=self.mongo_host, port=self.mongo_port, tz_aware=True, ssl=True, ssl_certfile=self.ssl_certfile, ssl_cert_reqs=ssl.CERT_REQUIRED, ssl_ca_certs=self.ssl_ca_certs, replicaSet=self.replicaSet)
+            db = con[self.mongo_db[0]]
             db.authenticate(self.mongo_user, self.mongo_password)
+        else:
+            con = MongoClient(host=self.mongo_host, port=self.mongo_port, read_preference=ReadPreference.SECONDARY)
+            db = con[self.mongo_db[0]]
+
         server_status = db.command('serverStatus')
 
         version = server_status['version']
@@ -129,6 +135,12 @@ class MongoDB(object):
                 self.mongo_password = node.values[0]
             elif node.key == 'Database':
                 self.mongo_db = node.values
+            elif node.key == 'Ssl_certfile':
+                self.ssl_certfile = node.values
+            elif node.key == 'Ssl_ca_certs':
+                self.ssl_ca_certs = node.values
+            elif node.key == 'ReplicaSet':
+                self.replicaSet = node.values
             else:
                 collectd.warning("mongodb plugin: Unkown configuration key %s" % node.key)
 
